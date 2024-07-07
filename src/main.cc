@@ -4,8 +4,10 @@
 #include <netinet/in.h>
 
 #include "Data/Net/UdpControl.h"
+#include "Data/Net/Server.h"
 #include "Repos/Messages/UdpMessageRepo.h"
 #include "Services/MessagePingPongService.h"
+#include "Endpoints/MessageEndpoint.h"
 
 int errorPrint(const char* msg, Response<UdpControl::Result> res)
 {
@@ -45,33 +47,28 @@ int setupSockaddr(sockaddr_in * addr)
 
 }
 
-int printResult(char * buffer, int size)
-{
-    if (buffer == nullptr) return -1;
-    if (size <= 0) return -1;
-    if (size > BUFFER_SIZE) return -1;
-
-    int i = 0;
-    while (i < size && i < BUFFER_SIZE)
-    {
-        std::cout << buffer[i++];
-    }
-    std::cout << std::endl;
-
-    return 0;
-}
-
-
-
-
-
 int main()
 {
-    // SETUP
-    sockaddr_in serverAddr;
-    if (setupSockaddr(&serverAddr)) return errorPrint("Failed to setup sockaddr");
+    sockaddr_in listenAddr;
+    if (setupSockaddr(&listenAddr)) return errorPrint("Failed to setup sockaddr");
 
-    UdpMessageRepo udpMessageRepo(serverAddr);
+    MessageEndpoint endpoint;
+
+    Server server(listenAddr, &endpoint);
+
+    Response<UdpControl::Result> res = server.Start();
+    if (!res.Success) return errorPrint("Failed to start server", res);
+
+    Response<int> runRes = server.Run();
+    if (!runRes.Success) return errorPrint("Failed to run server", runRes);
+
+    return 0;
+
+    // SETUP
+    /*
+    sockaddr_in targetAddr;
+
+    UdpMessageRepo udpMessageRepo(listenAddr, targetAddr);
     Response<UdpControl::Result> res = udpMessageRepo.Setup();
     if (!res.Success) return errorPrint("Failed to setup repo", res);
 
@@ -82,9 +79,9 @@ int main()
     if (!recPong.Success) return errorPrint("Failed to pong", recPong);
 
     int receivedSize = recPong.Payload;
-    printResult(buffer, receivedSize);
+    printResult(buffer, receivedSize);*/
 
-    return 0;
+    //return 0;
 }
 
 
